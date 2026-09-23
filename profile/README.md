@@ -1,11 +1,6 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/gnarl-dev/.github/main/profile/assets/gnarl-hero-dark.png">
-  <img alt="Gnarly, a St. Bernard carrying a barrel marked with the Gnarl knot, sitting on a rock in front of a network of connected points across a world map" src="https://raw.githubusercontent.com/gnarl-dev/.github/main/profile/assets/gnarl-hero-light.png" width="520">
-</picture>
+<img alt="Gnarl — decentralized search. The Gnarl knot above the wordmark, with Gnarly the St. Bernard below wearing a barrel marked with the same knot." src="https://raw.githubusercontent.com/gnarl-dev/.github/main/profile/assets/gnarl-stbernard-and-logo.png" width="680">
 
-# Gnarl
-
-**Decentralized search infrastructure.** Search data where it already lives.
+### Search data where it already lives.
 
 Classical distributed search assumes the cheapest place to search your data is a
 cluster you control, so step one is always the same: copy everything in. That
