@@ -22,20 +22,41 @@ gnarl mesh setup --mesh-name my-mesh   # create a private mesh, invite peers
 gnarl search "satellite imagery"       # query everyone who can answer
 ```
 
-## How a network is shaped
+## Four moving parts, none of them central
 
 No coordinator. No elected master. No shared cluster state to keep in sync.
-Three moving parts:
 
 | Part | What it does |
 | --- | --- |
-| **Node** | Indexes a local corpus, answers queries against it, enforces its own policy |
-| **Manifest** | A signed, compact statement of what a node *can* answer — never the documents |
-| **Query plan** | Chooses which nodes to ask, fans out, merges the ranked results |
+| **Node** | One process, one identity, one or more local indexes. The only component that touches data. |
+| **Manifest** | The signed summary a node advertises: fields, ranges, footprints, vocabulary. Never documents. |
+| **Planner** | Eliminates nodes that cannot contribute, ranks the survivors, fans out within a budget. |
+| **Verifier** | Checks every result signature against known identities before a hit reaches the caller. |
 
 A query enters at *any* node. That node reads the manifests it knows about,
-decides who is worth asking, fans out, and merges what comes back into one
-ranked result set.
+eliminates everyone who provably cannot help, fans out to the rest with a
+deadline attached, and merges what comes back into one ranked result set.
+
+Planning is local and takes microseconds. The wall clock is dominated by the
+slowest node you decided to wait for — which is why the deadline is yours.
+
+## What a node gives you
+
+- **Coordinator-free fan-out.** Any node can plan a query. The one that receives
+  it coordinates that query and nothing else — there is no master to elect,
+  lose, or fail over.
+- **Data never moves.** Corpora are opened read-only and indexed in place. The
+  query travels to the data; the documents stay on the host that owns them.
+- **Signed, verifiable results.** Every hit carries the signature of the node
+  that produced it, not the node that merged it. Tampering in transit is
+  detectable, and detected by default.
+- **Policy at the edge.** Each node decides who may ask, which indexes are
+  visible, which fields come back, and how fast — evaluated locally, every time,
+  before the index is touched.
+- **Text, geo, and vector.** Full-text, keyword, range, geospatial containment
+  and kNN vector search, composed with boolean clauses in one query.
+- **Peers of every size.** The same node runs on a server rack, a laptop, or a
+  phone in the field. Cloud to edge, one protocol, no privileged tier.
 
 ## Answers you can audit
 
@@ -50,6 +71,41 @@ whoever served it.
 A claim nobody could check counts against completeness exactly as an unanswered
 one does. *Cannot check* is never reported as *checked* — those are different
 states, and conflating them either invents trust or destroys good data.
+
+`--explain` shows you the whole thing, because the node already knew it and used
+to throw it away at the HTTP boundary:
+
+```
+$ gnarl search "king tide" --index places --explain
+
+▸ plan       1 index(es) resolved on this node
+▸ fan-out    41 claim(s) · 11/12 node(s) answered · deadline 750ms
+   ├─ n1qh7f…c2a8   ✓ 18 claim(s)  remote_replica
+   ├─ n1m4kd…91b3   ✓ 14 claim(s)  remote_replica
+   ├─ e22b5b…5358   ✓  3 claim(s)  local_primary
+   ├─ claim 37             ✗ timeout
+   └─ claim 40             ✗ unreachable
+▸ merge      124 hit(s) ranked
+▸ verify     32 proven · 2 unverifiable · 0 failed · 3 local
+   coverage  39/41 claims answered · complete: false
+   took      128ms
+```
+
+Four verification states, not two, and they account for every claim. A search
+that cannot tell you which peers answered is asking to be trusted rather than
+audited.
+
+## Built for data that will not move
+
+- **Federated geospatial archives.** Imagery too large to centralize stays with
+  the operator that collected it, while analysts query the whole constellation
+  as one surface.
+- **Sovereign and regulated data.** Residency stops being an architecture
+  problem when documents never cross a boundary in order to be searched.
+- **Edge and disconnected operations.** Nodes keep answering locally when the
+  uplink drops, and reconcile manifests when it returns.
+- **Multi-cloud without egress.** Three clouds, three nodes, one query. Stop
+  paying to funnel everything into a fourth place.
 
 ## Clients
 
